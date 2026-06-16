@@ -370,7 +370,7 @@ const ICE = { iceServers: [
   { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
 ] };
 function genCode() { const c = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
-function onlineReset() { try { online.conn && online.conn.close(); } catch (e) {} try { online.peer && online.peer.destroy(); } catch (e) {} online.active = false; online.peer = null; online.conn = null; }
+function onlineReset() { clearInterval(online.ka); try { online.conn && online.conn.close(); } catch (e) {} try { online.peer && online.peer.destroy(); } catch (e) {} online.active = false; online.peer = null; online.conn = null; }
 function backToStart() { $('online-wait').classList.remove('show'); $('online-start').classList.remove('hidden'); }
 function createRoom() {
   if (typeof Peer === 'undefined') { $('online-error').textContent = 'Module réseau indisponible (vérifie ta connexion).'; return; }
@@ -380,6 +380,7 @@ function createRoom() {
   const peer = new Peer('echq-' + code, { debug: 0, config: ICE }); online.peer = peer; online.myColor = 'w';
   peer.on('connection', (conn) => { conn.on('open', () => setupConn(conn)); });
   peer.on('error', (e) => { $('online-error').textContent = e.type === 'unavailable-id' ? 'Code déjà pris, réessaie.' : 'Erreur réseau : ' + e.type; backToStart(); });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
 }
 function joinRoom() {
   if (typeof Peer === 'undefined') { $('online-error').textContent = 'Module réseau indisponible.'; return; }
@@ -389,16 +390,20 @@ function joinRoom() {
   const peer = new Peer({ debug: 0, config: ICE }); online.peer = peer; online.myColor = 'b';
   peer.on('open', () => { const conn = peer.connect('echq-' + code, { reliable: true }); conn.on('open', () => setupConn(conn)); setTimeout(() => { if (!online.active) { $('online-error').textContent = 'Salle introuvable, vérifie le code.'; backToStart(); } }, 9000); });
   peer.on('error', (e) => { $('online-error').textContent = e.type === 'peer-unavailable' ? 'Salle introuvable, vérifie le code.' : 'Erreur réseau : ' + e.type; backToStart(); });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
 }
 function setupConn(conn) {
   online.conn = conn; online.active = true;
+  clearInterval(online.ka);
+  online.ka = setInterval(() => { try { if (conn.open) conn.send({ type: 'ping' }); } catch (e) {} }, 12000); // keep-alive : évite les coupures par inactivité (NAT/box)
   conn.on('data', (m) => {
-    if (!m || !m.type) return;
+    if (!m || !m.type || m.type === 'ping') return;
     if (m.type === 'init') { S.koth = m.koth; S.atomic = m.atomic; S.chess960 = m.chess960; S.powerups = m.powerups; online.seed = m.seed; startOnlineGame(); }
     else if (m.type === 'move') play(m.from, m.to, m.promo, true);
     else if (m.type === 'restart' && online.myColor === 'w') hostStart();
   });
-  conn.on('close', () => { if (!gameOver) { $('status').textContent = '⚠️ Adversaire déconnecté'; } });
+  conn.on('close', () => { clearInterval(online.ka); if (!gameOver) $('status').textContent = '⚠️ Adversaire déconnecté — clique « Rejouer » ou reviens au menu'; });
+  conn.on('error', () => { if (!gameOver) $('status').textContent = "⚠️ Problème de connexion avec l'adversaire"; });
   if (online.myColor === 'w') hostStart(); // le créateur fixe les règles + graine et démarre ; l'invité attend 'init'
 }
 function hostStart() {
