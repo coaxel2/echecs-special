@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Échecs Spécial — Axel & Clément</title>
+  <meta name="description" content="Un jeu d'échecs revisité, jouable à deux dans le navigateur. Projet TP3." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>♛ Échecs <span>Spécial</span></h1>
+    <p class="tagline">Le jeu d'échecs classique… avec un twist. Jouable à deux sur le même écran.</p>
+  </header>
+
+  <main>
+    <section class="game">
+      <div class="bar">
+        <div id="turn" class="turn">Trait aux <strong>Blancs</strong></div>
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="captured" id="captured-by-white" aria-label="Pièces noires capturées"></div>
+      <div id="board" class="board" role="grid" aria-label="Échiquier"></div>
+      <div class="captured" id="captured-by-black" aria-label="Pièces blanches capturées"></div>
+
+      <div class="controls">
+        <button id="new-game" type="button">↺ Nouvelle partie</button>
+        <label class="toggle">
+          <input type="checkbox" id="koth" />
+          <span>Mode <strong>King of the Hill</strong> 👑</span>
+        </label>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h2>Comment jouer</h2>
+      <ul>
+        <li>Clique une de tes pièces : ses coups possibles s'affichent.</li>
+        <li>Clique une case en surbrillance pour jouer.</li>
+        <li>Les Blancs commencent, puis on alterne.</li>
+        <li>Capture le <strong>roi</strong> adverse pour gagner.</li>
+      </ul>
+
+      <h2>Le twist spécial 👑</h2>
+      <p>
+        Active le <strong>Mode King of the Hill</strong> : le premier qui amène son
+        <strong>roi au centre</strong> de l'échiquier (les 4 cases centrales) gagne
+        instantanément, en plus de la règle de capture du roi.
+      </p>
+
+      <h2>À venir (idées d'équipe)</h2>
+      <ul class="todo">
+        <li>⏱️ Horloge / chrono par joueur</li>
+        <li>💥 Mode « Atomic » (les captures explosent autour)</li>
+        <li>🎁 Power-ups sur certaines cases</li>
+        <li>🤖 Adversaire automatique (IA simple)</li>
+        <li>🔄 Roque, prise en passant, détection d'échec et mat</li>
+      </ul>
+    </aside>
+  </main>
+
+  <footer>
+    <p>Projet <strong>TP3</strong> — Groupe Axel &amp; Clément · construit avec HTML, CSS et JavaScript (sans dépendance).</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
