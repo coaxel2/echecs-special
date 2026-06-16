@@ -15,7 +15,8 @@
       <h1>♛ Échecs <span>Spécial</span></h1>
       <p class="tagline">Échecs complets, personnalisables, avec IA et modes délirants.</p>
       <div class="menu-actions">
-        <button id="btn-play" class="big">▶ Jouer</button>
+        <button id="btn-play" class="big">▶ Jouer (local)</button>
+        <button id="btn-online" class="big online">🌐 Jouer en ligne</button>
         <div class="menu-row">
           <button id="btn-settings" class="ghost">⚙️ Paramètres</button>
           <button id="btn-rules" class="ghost">❔ Règles</button>
@@ -176,6 +177,30 @@
     </div>
   </div>
 
+  <!-- ============ MODALE MULTIJOUEUR ============ -->
+  <div id="online" class="modal">
+    <div class="modal-box">
+      <div class="modal-head"><h2>🌐 Jouer en ligne</h2><button class="close" data-close>✕</button></div>
+      <p class="hint">Affrontez-vous sur deux appareils différents : l'un <strong>crée</strong> la partie et partage le code, l'autre le <strong>saisit</strong>. (Connexion directe navigateur-à-navigateur, échecs standard.)</p>
+      <div id="online-start">
+        <button id="btn-create" class="big">➕ Créer une partie</button>
+        <div class="join-row">
+          <input id="join-code" placeholder="CODE" autocomplete="off" maxlength="8" />
+          <button id="btn-join" class="primary">Rejoindre</button>
+        </div>
+        <p id="online-error" class="online-error"></p>
+      </div>
+      <div id="online-wait" class="online-wait">
+        <p class="wait-label">Partage ce code à ton adversaire :</p>
+        <div class="big-code" id="room-code">----</div>
+        <p id="online-status">⏳ En attente d'un adversaire…</p>
+        <div class="spinner"></div>
+        <button id="btn-cancel-online" class="ghost">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

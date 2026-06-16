@@ -201,6 +201,7 @@ function renderAdvantage() {
 function onClick(r, c) {
   if (gameOver || pendingPromo) return;
   if (S.opponent==='ai' && turn===aiColor) return; // pas la main pendant le tour de l'IA
+  if (online.active && turn !== online.myColor) return; // en ligne : seulement à ton tour
   hintMove = null;
   const move = legalMoves.find(m=>m.r===r&&m.c===c);
   if (selected && move) return play(selected, move);
@@ -212,9 +213,10 @@ function onClick(r, c) {
 function snapshot() { return { board: clone(board), turn, enPassant: enPassant?{...enPassant}:null, captured:{w:[...captured.w],b:[...captured.b]}, history:[...history], lastMove:lastMove?{from:{...lastMove.from},to:{...lastMove.to}}:null, powerTiles:powerTiles.map(t=>({...t})), clocks:{...clocks} }; }
 function restore(s) { board=s.board; turn=s.turn; enPassant=s.enPassant; captured=s.captured; history=s.history; lastMove=s.lastMove; powerTiles=s.powerTiles; clocks=s.clocks; gameOver=false; selected=null; legalMoves=[]; hintMove=null; $('banner').classList.remove('show'); $('status').textContent=''; renderHistory(); }
 
-function play(from, to, promoChoice) {
+function play(from, to, promoChoice, remote) {
   const p = board[from.r][from.c];
   if (to.special==='promo' && !promoChoice && !(S.opponent==='ai' && p.color===aiColor)) { pendingPromo={from,to}; showPromo(p.color); return; }
+  if (online.active && !remote) { try { online.conn.send({ type:'move', from:{r:from.r,c:from.c}, to:{r:to.r,c:to.c,special:to.special}, promo: promoChoice||null }); } catch(e){} }
   undoStack.push(snapshot());
 
   const cap = board[to.r][to.c] || (to.special==='enpassant' ? board[from.r][to.c] : null);
@@ -270,7 +272,7 @@ function doHint() {
   if (m) { hintMove = m; render(); $('status').textContent = '💡 Indice affiché'; }
 }
 function doUndo() {
-  if (!undoStack.length) return;
+  if (onlineGame || !undoStack.length) return;
   clearInterval(clockTimer);
   restore(undoStack.pop());
   if (S.opponent==='ai' && turn===aiColor && undoStack.length) restore(undoStack.pop());
@@ -347,21 +349,65 @@ function bindSettings() {
   }
 }
 
+// ===== Multijoueur (PeerJS / WebRTC) — échecs standard, salle par code =====
+const online = { active: false, peer: null, conn: null, myColor: 'w' };
+let onlineGame = false;
+function genCode() { const c = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
+function onlineReset() { try { online.conn && online.conn.close(); } catch (e) {} try { online.peer && online.peer.destroy(); } catch (e) {} online.active = false; online.peer = null; online.conn = null; }
+function backToStart() { $('online-wait').classList.remove('show'); $('online-start').classList.remove('hidden'); }
+function createRoom() {
+  if (typeof Peer === 'undefined') { $('online-error').textContent = 'Module réseau indisponible (vérifie ta connexion).'; return; }
+  onlineReset(); const code = genCode();
+  $('online-error').textContent = ''; $('online-start').classList.add('hidden'); $('online-wait').classList.add('show');
+  $('room-code').textContent = code; $('online-status').textContent = "⏳ En attente d'un adversaire…";
+  const peer = new Peer('echq-' + code, { debug: 0 }); online.peer = peer; online.myColor = 'w';
+  peer.on('connection', (conn) => { conn.on('open', () => setupConn(conn)); });
+  peer.on('error', (e) => { $('online-error').textContent = e.type === 'unavailable-id' ? 'Code déjà pris, réessaie.' : 'Erreur réseau : ' + e.type; backToStart(); });
+}
+function joinRoom() {
+  if (typeof Peer === 'undefined') { $('online-error').textContent = 'Module réseau indisponible.'; return; }
+  const code = ($('join-code').value || '').trim().toUpperCase(); if (code.length < 4) { $('online-error').textContent = 'Entre le code reçu.'; return; }
+  onlineReset(); $('online-error').textContent = ''; $('online-start').classList.add('hidden'); $('online-wait').classList.add('show');
+  $('room-code').textContent = code; $('online-status').textContent = '🔌 Connexion…';
+  const peer = new Peer({ debug: 0 }); online.peer = peer; online.myColor = 'b';
+  peer.on('open', () => { const conn = peer.connect('echq-' + code, { reliable: true }); conn.on('open', () => setupConn(conn)); setTimeout(() => { if (!online.active) { $('online-error').textContent = 'Salle introuvable, vérifie le code.'; backToStart(); } }, 9000); });
+  peer.on('error', (e) => { $('online-error').textContent = e.type === 'peer-unavailable' ? 'Salle introuvable, vérifie le code.' : 'Erreur réseau : ' + e.type; backToStart(); });
+}
+function setupConn(conn) {
+  online.conn = conn; online.active = true;
+  conn.on('data', (m) => { if (m && m.type === 'move') play(m.from, m.to, m.promo, true); else if (m && m.type === 'restart') startOnlineGame(); });
+  conn.on('close', () => { if (!gameOver) { $('status').textContent = '⚠️ Adversaire déconnecté'; } });
+  startOnlineGame();
+}
+function startOnlineGame() {
+  onlineGame = true;
+  S.koth = false; S.atomic = false; S.chess960 = false; S.powerups = false; S.opponent = '2p'; S.clock = 0; // règles standard déterministes
+  closeModals(); show('game-screen'); newGame();
+  orientation = online.myColor; render();
+  $('turn').innerHTML = `🌐 En ligne · Trait aux <strong>Blancs</strong>`;
+  const badge = $('active-modes'); badge.innerHTML = ''; const s = document.createElement('span'); s.className = 'badge live'; s.textContent = '🌐 En ligne — tu joues ' + (online.myColor === 'w' ? 'Blancs' : 'Noirs'); badge.appendChild(s);
+}
+function leaveOnline() { if (onlineGame) { onlineReset(); onlineGame = false; S = loadSettings(); applySettings(); } }
+
 // ===== Boutons =====
-$('btn-play').addEventListener('click', ()=>{ show('game-screen'); newGame(); });
-$('btn-settings').addEventListener('click', ()=>openModal('settings'));
-$('btn-settings2').addEventListener('click', ()=>openModal('settings'));
-$('btn-rules').addEventListener('click', ()=>openModal('rules'));
-$('btn-menu').addEventListener('click', ()=>show('menu'));
-$('btn-newgame').addEventListener('click', newGame);
+$('btn-play').addEventListener('click', () => { leaveOnline(); show('game-screen'); newGame(); });
+$('btn-online').addEventListener('click', () => { backToStart(); $('online-error').textContent=''; $('join-code').value=''; openModal('online'); });
+$('btn-create').addEventListener('click', createRoom);
+$('btn-join').addEventListener('click', joinRoom);
+$('btn-cancel-online').addEventListener('click', () => { onlineReset(); backToStart(); });
+$('btn-settings').addEventListener('click', () => openModal('settings'));
+$('btn-settings2').addEventListener('click', () => openModal('settings'));
+$('btn-rules').addEventListener('click', () => openModal('rules'));
+$('btn-menu').addEventListener('click', () => { leaveOnline(); show('menu'); });
+$('btn-newgame').addEventListener('click', () => { if (onlineGame) { try { online.conn && online.conn.send({ type: 'restart' }); } catch (e) {} startOnlineGame(); } else newGame(); });
 $('btn-undo').addEventListener('click', doUndo);
 $('btn-hint').addEventListener('click', doHint);
 $('btn-flip').addEventListener('click', doFlip);
-document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', closeModals));
-document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',(e)=>{ if (e.target===m) closeModals(); }));
-document.querySelectorAll('.chip[data-opp]').forEach(b=>b.addEventListener('click',()=>{ S.opponent=b.dataset.opp; saveSettings(); document.querySelectorAll('.chip[data-opp]').forEach(x=>x.classList.toggle('sel',x===b)); $('set-opponent').value=S.opponent; }));
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) closeModals(); }));
+document.querySelectorAll('.chip[data-opp]').forEach(b => b.addEventListener('click', () => { S.opponent = b.dataset.opp; saveSettings(); document.querySelectorAll('.chip[data-opp]').forEach(x => x.classList.toggle('sel', x === b)); $('set-opponent').value = S.opponent; }));
 
 // Init
 applySettings();
 bindSettings();
-document.querySelectorAll('.chip[data-opp]').forEach(b=>b.classList.toggle('sel', b.dataset.opp===S.opponent));
+document.querySelectorAll('.chip[data-opp]').forEach(b => b.classList.toggle('sel', b.dataset.opp === S.opponent));

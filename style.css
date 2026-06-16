@@ -162,6 +162,20 @@ body[data-pieces="gold"] .piece.b { color: #c0c4cc; text-shadow: 0 1px 2px #2a2a
 .help { padding-left: 1.1rem; color: var(--muted); font-size: 0.9rem; }
 .help li { margin: 0.3rem 0; }
 
+/* ===== Multijoueur ===== */
+.big.online { background: linear-gradient(90deg, #00d4ff, #00ffa3); margin-top: 0.6rem; }
+.join-row { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
+#join-code { flex: 1; background: #20223e; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem; font-size: 1.1rem; text-transform: uppercase; text-align: center; letter-spacing: 3px; font-family: inherit; }
+.online-error { color: #ff6b6b; font-size: 0.85rem; min-height: 1rem; margin-top: 0.5rem; }
+.online-wait { display: none; text-align: center; }
+.online-wait.show { display: block; }
+#online-start.hidden { display: none; }
+.wait-label { color: var(--muted); }
+.big-code { font-size: 2.6rem; font-weight: 800; letter-spacing: 8px; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; margin: 0.5rem 0; }
+.spinner { width: 38px; height: 38px; border: 4px solid var(--border); border-top-color: var(--accent2); border-radius: 50%; margin: 1rem auto; animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.badge.live { background: linear-gradient(90deg,#00d4ff,#00ffa3); color:#03121a; border:none; }
+
 @media (max-width: 760px) {
   .settings-grid, .toggles { grid-template-columns: 1fr; }
   .panel { width: min(86vw, 480px); }
