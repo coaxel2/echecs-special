@@ -9,9 +9,14 @@ const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 const NAME = { k: 'R', q: 'D', r: 'T', b: 'F', n: 'C', p: '' };
 
 // Power-ups façon Mario Kart
-const POWERS = ['mushroom', 'bolt', 'shell', 'bomb', 'star'];
-const POWER_ICON = { mushroom: '🍄', bolt: '⚡', shell: '🐢', bomb: '💣', star: '🌟' };
+const POWER_ICON = { mushroom: '🍄', bolt: '⚡', bomb: '💣', star: '🌟' };
+const POWERS_COMMON = ['mushroom', 'bolt', 'bomb']; // power-ups courants
+const STAR_CHANCE = 0.07;   // 🌟 étoile : super rare
+const SPAWN_CHANCE = 0.15;  // apparition occasionnelle (par demi-coup)
 const MAX_POWER_TILES = 4;
+function pickPowerType() {
+  return Math.random() < STAR_CHANCE ? 'star' : POWERS_COMMON[Math.floor(Math.random() * POWERS_COMMON.length)];
+}
 const AI_DEPTH = 3; // profondeur de recherche minimax (racine + AI_DEPTH plis)
 
 // --- DOM ---
@@ -225,11 +230,11 @@ function spawnPower() {
     if (!board[r][c] && !powerTiles.some((t) => t.r === r && t.c === c)) empty.push({ r, c });
   if (!empty.length) return;
   const cell = empty[Math.floor(Math.random() * empty.length)];
-  powerTiles.push({ r: cell.r, c: cell.c, type: POWERS[Math.floor(Math.random() * POWERS.length)] });
+  powerTiles.push({ r: cell.r, c: cell.c, type: pickPowerType() });
 }
 function maybeSpawnPower() {
   if (!opt.powerups.checked || powerTiles.length >= MAX_POWER_TILES) return;
-  if (Math.random() < 0.34) spawnPower(); // ~1 chance sur 3 par coup
+  if (Math.random() < SPAWN_CHANCE) spawnPower();
 }
 function applyPower(type, color, r, c) {
   const enemy = other(color);
@@ -241,11 +246,7 @@ function applyPower(type, color, r, c) {
   let replay = false, msg = '';
   if (type === 'mushroom') { replay = true; msg = '🍄 Champignon — tu rejoues !'; }
   else if (type === 'bolt') { zap(rand(targets)); msg = '⚡ Éclair — pièce ennemie foudroyée !'; }
-  else if (type === 'shell') {
-    let best = null, bd = 1e9;
-    for (const t of targets) { const d = Math.abs(t.i - r) + Math.abs(t.j - c); if (d < bd) { bd = d; best = t; } }
-    zap(best); msg = '🐢 Carapace — pièce la plus proche éliminée !';
-  } else if (type === 'bomb') {
+  else if (type === 'bomb') {
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       const nr = r + dr, nc = c + dc;
       if (inB(nr, nc) && board[nr][nc] && board[nr][nc].color === enemy && board[nr][nc].type !== 'k') zap({ i: nr, j: nc });
@@ -421,7 +422,7 @@ function newGame() {
   turn = 'w'; selected = null; legalMoves = []; gameOver = false;
   captured = { w: [], b: [] }; enPassant = null; history = []; lastMove = null; pendingPromo = null;
   powerTiles = [];
-  if (opt.powerups.checked) { spawnPower(); spawnPower(); } // 2 cases au départ, d'autres apparaîtront
+  if (opt.powerups.checked) spawnPower(); // 1 case au départ, d'autres apparaissent occasionnellement
   clocks = { w: 300, b: 300 };
   statusEl.textContent = ''; bannerEl.classList.remove('show'); historyEl.innerHTML = '';
   turnEl.innerHTML = 'Trait aux <strong>Blancs</strong>';
