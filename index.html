@@ -4,77 +4,177 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Échecs Spécial — Axel & Clément</title>
-  <meta name="description" content="Un jeu d'échecs complet et revisité (échec et mat, roque, en passant, IA, modes spéciaux). Jouable dans le navigateur. Projet TP3." />
+  <meta name="description" content="Jeu d'échecs complet et personnalisable : thèmes, IA, modes spéciaux, power-ups. Projet TP3." />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <header>
-    <h1>♛ Échecs <span>Spécial</span></h1>
-    <p class="tagline">Échecs complets — échec et mat, roque, prise en passant — avec IA et modes délirants.</p>
-  </header>
+<body data-theme="classic" data-pieces="classic">
 
-  <main>
-    <section class="game">
-      <div class="bar">
-        <div id="turn" class="turn">Trait aux <strong>Blancs</strong></div>
+  <!-- ============ ÉCRAN D'ACCUEIL ============ -->
+  <section id="menu" class="screen active">
+    <div class="menu-card">
+      <h1>♛ Échecs <span>Spécial</span></h1>
+      <p class="tagline">Échecs complets, personnalisables, avec IA et modes délirants.</p>
+      <div class="menu-actions">
+        <button id="btn-play" class="big">▶ Jouer</button>
+        <div class="menu-row">
+          <button id="btn-settings" class="ghost">⚙️ Paramètres</button>
+          <button id="btn-rules" class="ghost">❔ Règles</button>
+        </div>
+      </div>
+      <div class="menu-quick">
+        <span>Adversaire :</span>
+        <button class="chip" data-opp="2p">👥 2 joueurs</button>
+        <button class="chip" data-opp="ai">🤖 Ordinateur</button>
+      </div>
+      <p class="menu-foot">Projet TP3 · Groupe Axel &amp; Clément</p>
+    </div>
+  </section>
+
+  <!-- ============ ÉCRAN DE JEU ============ -->
+  <section id="game-screen" class="screen">
+    <div class="topbar">
+      <button id="btn-menu" class="icon-btn" title="Menu">☰</button>
+      <div id="turn" class="turn">Trait aux <strong>Blancs</strong></div>
+      <button id="btn-settings2" class="icon-btn" title="Paramètres">⚙️</button>
+    </div>
+
+    <main class="layout">
+      <div class="game">
+        <div class="player-line" id="line-top">
+          <span class="who">Noirs</span>
+          <span class="captured" id="captured-by-black"></span>
+          <span id="adv-b" class="adv"></span>
+          <span id="clock-b" class="clock">5:00</span>
+        </div>
+
+        <div class="board-wrap">
+          <div id="board" class="board" role="grid" aria-label="Échiquier"></div>
+          <div id="banner" class="win-banner" role="status"></div>
+          <div id="promo" class="promo" role="dialog" aria-label="Promotion"></div>
+        </div>
+
+        <div class="player-line" id="line-bottom">
+          <span class="who">Blancs</span>
+          <span class="captured" id="captured-by-white"></span>
+          <span id="adv-w" class="adv"></span>
+          <span id="clock-w" class="clock">5:00</span>
+        </div>
+
         <div id="status" class="status"></div>
+
+        <div class="controls">
+          <button id="btn-undo" class="ctrl" title="Annuler">↩︎ Annuler</button>
+          <button id="btn-hint" class="ctrl" title="Indice">💡 Indice</button>
+          <button id="btn-flip" class="ctrl" title="Retourner">⇅ Retourner</button>
+          <button id="btn-newgame" class="ctrl primary" title="Nouvelle partie">↺ Rejouer</button>
+        </div>
       </div>
 
-      <div class="side"><span class="lbl">Noirs</span> <span id="clock-b" class="clock">5:00</span></div>
-      <div class="captured" id="captured-by-black" aria-label="Pièces blanches capturées"></div>
+      <aside class="panel">
+        <h2>📜 Coups</h2>
+        <div id="history" class="history"></div>
+        <h2>🎮 Modes actifs</h2>
+        <div id="active-modes" class="badges"></div>
+      </aside>
+    </main>
+  </section>
 
-      <div class="board-wrap">
-        <div id="board" class="board" role="grid" aria-label="Échiquier"></div>
-        <div id="banner" class="win-banner" role="status"></div>
-        <div id="promo" class="promo" role="dialog" aria-label="Choix de promotion"></div>
+  <!-- ============ MODALE PARAMÈTRES ============ -->
+  <div id="settings" class="modal">
+    <div class="modal-box">
+      <div class="modal-head"><h2>⚙️ Paramètres</h2><button class="close" data-close>✕</button></div>
+      <div class="settings-grid">
+        <label>🎨 Thème du plateau
+          <select id="set-theme">
+            <option value="classic">Classique</option>
+            <option value="wood">Bois</option>
+            <option value="forest">Forêt</option>
+            <option value="ocean">Océan</option>
+            <option value="neon">Néon</option>
+            <option value="marble">Marbre</option>
+          </select>
+        </label>
+        <label>♟️ Style des pièces
+          <select id="set-pieces">
+            <option value="classic">Classique</option>
+            <option value="neon">Néon</option>
+            <option value="candy">Bonbon</option>
+            <option value="gold">Or & Argent</option>
+          </select>
+        </label>
+        <label>🤖 Adversaire
+          <select id="set-opponent">
+            <option value="2p">2 joueurs</option>
+            <option value="ai">Ordinateur (IA)</option>
+          </select>
+        </label>
+        <label>📊 Niveau de l'IA
+          <select id="set-ailevel">
+            <option value="1">Facile</option>
+            <option value="2">Moyen</option>
+            <option value="3" selected>Difficile</option>
+          </select>
+        </label>
+        <label>🎭 Ta couleur (vs IA)
+          <select id="set-side">
+            <option value="w">Blancs</option>
+            <option value="b">Noirs</option>
+            <option value="random">Aléatoire</option>
+          </select>
+        </label>
+        <label>⏱️ Cadence
+          <select id="set-clock">
+            <option value="0">Sans horloge</option>
+            <option value="180">Blitz · 3 min</option>
+            <option value="300" selected>Rapide · 5 min</option>
+            <option value="600">Long · 10 min</option>
+          </select>
+        </label>
       </div>
 
-      <div class="captured" id="captured-by-white" aria-label="Pièces noires capturées"></div>
-      <div class="side"><span class="lbl">Blancs</span> <span id="clock-w" class="clock">5:00</span></div>
-
-      <div class="controls">
-        <button id="new-game" type="button">↺ Nouvelle partie</button>
+      <h3>🧩 Modes spéciaux</h3>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" autocomplete="off" id="set-koth" /> 👑 King of the Hill</label>
+        <label class="toggle"><input type="checkbox" autocomplete="off" id="set-atomic" /> 💥 Atomic</label>
+        <label class="toggle"><input type="checkbox" autocomplete="off" id="set-chess960" /> 🎲 Chess960</label>
+        <label class="toggle"><input type="checkbox" autocomplete="off" id="set-powerups" /> 🎁 Power-ups</label>
       </div>
-    </section>
 
-    <aside class="panel">
-      <h2>⚙️ Modes & options</h2>
-      <div class="opts">
-        <label class="toggle"><input type="checkbox" autocomplete="off" id="koth" /> <span>👑 King of the Hill</span></label>
-        <label class="toggle"><input type="checkbox" autocomplete="off" id="atomic" /> <span>💥 Atomic (captures explosives)</span></label>
-        <label class="toggle"><input type="checkbox" autocomplete="off" id="chess960" /> <span>🎲 Chess960 (départ aléatoire)</span></label>
-        <label class="toggle"><input type="checkbox" autocomplete="off" id="powerups" /> <span>🎁 Power-ups (cases « rejouer »)</span></label>
-        <label class="toggle"><input type="checkbox" autocomplete="off" id="ai" /> <span>🤖 Jouer contre l'IA (Noirs)</span></label>
-        <label class="toggle"><input type="checkbox" autocomplete="off" id="clock-on" checked /> <span>⏱️ Horloge (5 min/joueur)</span></label>
-        <label class="toggle"><input type="checkbox" autocomplete="off" id="sound" checked /> <span>🔊 Sons</span></label>
+      <h3>🎛️ Affichage & son</h3>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" autocomplete="off" id="set-coords" checked /> 🔢 Coordonnées</label>
+        <label class="toggle"><input type="checkbox" autocomplete="off" id="set-sound" checked /> 🔊 Sons</label>
+        <label class="toggle"><input type="checkbox" autocomplete="off" id="set-highlight" checked /> ✨ Surbrillance des coups</label>
       </div>
-      <p class="hint">Changer un mode (sauf 👑/⏱️/🔊) relance une partie.</p>
 
-      <h2>📜 Historique</h2>
-      <div id="history" class="history"></div>
+      <div class="modal-actions"><button data-close class="primary">Fermer</button></div>
+    </div>
+  </div>
 
-      <h2>❔ Aide</h2>
+  <!-- ============ MODALE RÈGLES ============ -->
+  <div id="rules" class="modal">
+    <div class="modal-box">
+      <div class="modal-head"><h2>❔ Règles & aide</h2><button class="close" data-close>✕</button></div>
       <ul class="help">
         <li>Clique une pièce → ses coups s'affichent → clique une case.</li>
         <li>Règles complètes : <strong>échec et mat</strong>, <strong>roque</strong>, <strong>prise en passant</strong>, promotion au choix.</li>
-        <li><strong>👑 King of the Hill</strong> : amène ton roi au centre pour gagner.</li>
-        <li><strong>💥 Atomic</strong> : chaque capture détruit les pièces autour.</li>
+        <li><strong>Annuler</strong> revient en arrière, <strong>Indice</strong> propose un coup, <strong>Retourner</strong> pivote le plateau.</li>
       </ul>
-
-      <h2>🎁 Power-ups (façon Mario Kart)</h2>
-      <p class="hint">Active le mode 🎁 : des cases bonus apparaissent au fil de la partie. Arrête une pièce dessus pour déclencher l'effet.</p>
+      <h3>🧩 Modes spéciaux</h3>
       <ul class="help">
-        <li>🍄 <strong>Champignon</strong> : tu rejoues un coup</li>
-        <li>⚡ <strong>Éclair</strong> : foudroie une pièce ennemie au hasard</li>
-        <li>💣 <strong>Bob-omb</strong> : explosion, détruit tout autour</li>
-        <li>🌟 <strong>Étoile</strong> <em>(super rare)</em> : tu rejoues <em>et</em> tu foudroies une pièce</li>
+        <li><strong>👑 King of the Hill</strong> : amène ton roi au centre pour gagner.</li>
+        <li><strong>💥 Atomic</strong> : chaque capture explose le voisinage.</li>
+        <li><strong>🎲 Chess960</strong> : position de départ aléatoire.</li>
+        <li><strong>🎁 Power-ups</strong> : des cases bonus apparaissent (occasionnellement).</li>
       </ul>
-    </aside>
-  </main>
-
-  <footer>
-    <p>Projet <strong>TP3</strong> — Groupe Axel &amp; Clément · HTML / CSS / JavaScript, sans dépendance.</p>
-  </footer>
+      <h3>🎁 Les power-ups</h3>
+      <ul class="help">
+        <li>🍄 <strong>Champignon</strong> : tu rejoues · ⚡ <strong>Éclair</strong> : foudroie une pièce</li>
+        <li>💣 <strong>Bob-omb</strong> : explosion · 🌟 <strong>Étoile</strong> <em>(rare)</em> : rejoue + foudroie</li>
+      </ul>
+      <div class="modal-actions"><button data-close class="primary">Compris</button></div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
