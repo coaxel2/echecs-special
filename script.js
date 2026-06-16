@@ -9,7 +9,17 @@ const NAME = { k: 'R', q: 'D', r: 'T', b: 'F', n: 'C', p: '' };
 const POWER_ICON = { mushroom: '🍄', bolt: '⚡', bomb: '💣', star: '🌟' };
 const POWERS_COMMON = ['mushroom', 'bolt', 'bomb'];
 const STAR_CHANCE = 0.07, SPAWN_CHANCE = 0.15, MAX_POWER_TILES = 4;
-const pickPowerType = () => (Math.random() < STAR_CHANCE ? 'star' : POWERS_COMMON[Math.floor(Math.random() * 3)]);
+// Aléatoire à graine (mulberry32) : en ligne, les 2 clients partagent la même graine → tirages identiques (synchro)
+let onlineGame = false, rngState = 1;
+function seedRng(s) { rngState = (s >>> 0) || 1; }
+function rnd() {
+  if (!onlineGame) return Math.random();
+  rngState = (rngState + 0x6D2B79F5) | 0;
+  let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const pickPowerType = () => (rnd() < STAR_CHANCE ? 'star' : POWERS_COMMON[Math.floor(rnd() * 3)]);
 
 const $ = (id) => document.getElementById(id);
 
@@ -38,7 +48,7 @@ const other = (col) => (col === 'w' ? 'b' : 'w');
 function backRankStandard() { return ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']; }
 function backRank960() {
   let r;
-  do { r = ['r','n','b','q','k','b','n','r']; for (let i = 7; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } } while (!valid960(r));
+  do { r = ['r','n','b','q','k','b','n','r']; for (let i = 7; i > 0; i--) { const j = Math.floor(rnd()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } } while (!valid960(r));
   return r;
 }
 function valid960(r) {
@@ -135,15 +145,15 @@ function aiMove() { if (gameOver) return; const m = bestMove(aiColor, Math.max(0
 function spawnPower() {
   const empty=[]; for (let r=0;r<8;r++) for (let c=0;c<8;c++) if (!board[r][c]&&!powerTiles.some(t=>t.r===r&&t.c===c)) empty.push({r,c});
   if (!empty.length) return;
-  const cell=empty[Math.floor(Math.random()*empty.length)];
+  const cell=empty[Math.floor(rnd()*empty.length)];
   powerTiles.push({ r: cell.r, c: cell.c, type: pickPowerType() });
 }
-function maybeSpawnPower() { if (!S.powerups || powerTiles.length>=MAX_POWER_TILES) return; if (Math.random()<SPAWN_CHANCE) spawnPower(); }
+function maybeSpawnPower() { if (!S.powerups || powerTiles.length>=MAX_POWER_TILES) return; if (rnd()<SPAWN_CHANCE) spawnPower(); }
 function applyPower(type, color, r, c) {
   const enemy=other(color), targets=[];
   for (let i=0;i<8;i++) for (let j=0;j<8;j++) if (board[i][j]&&board[i][j].color===enemy&&board[i][j].type!=='k') targets.push({i,j});
   const zap=(t)=>{ if (t){ captured[color].push(board[t.i][t.j]); board[t.i][t.j]=null; } };
-  const rand=(a)=>a[Math.floor(Math.random()*a.length)];
+  const rand=(a)=>a[Math.floor(rnd()*a.length)];
   let replay=false, msg='';
   if (type==='mushroom') { replay=true; msg='🍄 Champignon — tu rejoues !'; }
   else if (type==='bolt') { zap(rand(targets)); msg='⚡ Éclair — pièce foudroyée !'; }
@@ -350,8 +360,7 @@ function bindSettings() {
 }
 
 // ===== Multijoueur (PeerJS / WebRTC) — échecs standard, salle par code =====
-const online = { active: false, peer: null, conn: null, myColor: 'w' };
-let onlineGame = false;
+const online = { active: false, peer: null, conn: null, myColor: 'w', seed: 1 };
 // Serveurs ICE : STUN (découverte IP) + TURN (relais) pour traverser les box/pare-feux entre réseaux différents
 const ICE = { iceServers: [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -383,17 +392,31 @@ function joinRoom() {
 }
 function setupConn(conn) {
   online.conn = conn; online.active = true;
-  conn.on('data', (m) => { if (m && m.type === 'move') play(m.from, m.to, m.promo, true); else if (m && m.type === 'restart') startOnlineGame(); });
+  conn.on('data', (m) => {
+    if (!m || !m.type) return;
+    if (m.type === 'init') { S.koth = m.koth; S.atomic = m.atomic; S.chess960 = m.chess960; S.powerups = m.powerups; online.seed = m.seed; startOnlineGame(); }
+    else if (m.type === 'move') play(m.from, m.to, m.promo, true);
+    else if (m.type === 'restart' && online.myColor === 'w') hostStart();
+  });
   conn.on('close', () => { if (!gameOver) { $('status').textContent = '⚠️ Adversaire déconnecté'; } });
+  if (online.myColor === 'w') hostStart(); // le créateur fixe les règles + graine et démarre ; l'invité attend 'init'
+}
+function hostStart() {
+  online.seed = (Math.floor(Math.random() * 2e9)) >>> 0;
+  try { online.conn.send({ type: 'init', koth: S.koth, atomic: S.atomic, chess960: S.chess960, powerups: S.powerups, seed: online.seed }); } catch (e) {}
   startOnlineGame();
 }
 function startOnlineGame() {
   onlineGame = true;
-  S.koth = false; S.atomic = false; S.chess960 = false; S.powerups = false; S.opponent = '2p'; S.clock = 0; // règles standard déterministes
+  S.opponent = '2p'; S.clock = 0; // en ligne : pas d'IA ni d'horloge ; les MODES SPÉCIAUX sont conservés et synchronisés (graine partagée)
+  seedRng(online.seed || 1);
   closeModals(); show('game-screen'); newGame();
   orientation = online.myColor; render();
   $('turn').innerHTML = `🌐 En ligne · Trait aux <strong>Blancs</strong>`;
-  const badge = $('active-modes'); badge.innerHTML = ''; const s = document.createElement('span'); s.className = 'badge live'; s.textContent = '🌐 En ligne — tu joues ' + (online.myColor === 'w' ? 'Blancs' : 'Noirs'); badge.appendChild(s);
+  const badge = $('active-modes'); badge.innerHTML = '';
+  const tags = ['🌐 Tu joues ' + (online.myColor === 'w' ? 'Blancs' : 'Noirs')];
+  if (S.koth) tags.push('👑 KotH'); if (S.atomic) tags.push('💥 Atomic'); if (S.chess960) tags.push('🎲 Chess960'); if (S.powerups) tags.push('🎁 Power-ups');
+  tags.forEach((t, i) => { const s = document.createElement('span'); s.className = 'badge' + (i === 0 ? ' live' : ''); s.textContent = t; badge.appendChild(s); });
 }
 function leaveOnline() { if (onlineGame) { onlineReset(); onlineGame = false; S = loadSettings(); applySettings(); } }
 
@@ -407,7 +430,7 @@ $('btn-settings').addEventListener('click', () => openModal('settings'));
 $('btn-settings2').addEventListener('click', () => openModal('settings'));
 $('btn-rules').addEventListener('click', () => openModal('rules'));
 $('btn-menu').addEventListener('click', () => { leaveOnline(); show('menu'); });
-$('btn-newgame').addEventListener('click', () => { if (onlineGame) { try { online.conn && online.conn.send({ type: 'restart' }); } catch (e) {} startOnlineGame(); } else newGame(); });
+$('btn-newgame').addEventListener('click', () => { if (onlineGame) { if (online.myColor === 'w') hostStart(); else { try { online.conn.send({ type: 'restart' }); } catch (e) {} } } else newGame(); });
 $('btn-undo').addEventListener('click', doUndo);
 $('btn-hint').addEventListener('click', doHint);
 $('btn-flip').addEventListener('click', doFlip);
