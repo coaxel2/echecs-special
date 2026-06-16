@@ -352,6 +352,14 @@ function bindSettings() {
 // ===== Multijoueur (PeerJS / WebRTC) — échecs standard, salle par code =====
 const online = { active: false, peer: null, conn: null, myColor: 'w' };
 let onlineGame = false;
+// Serveurs ICE : STUN (découverte IP) + TURN (relais) pour traverser les box/pare-feux entre réseaux différents
+const ICE = { iceServers: [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+] };
 function genCode() { const c = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
 function onlineReset() { try { online.conn && online.conn.close(); } catch (e) {} try { online.peer && online.peer.destroy(); } catch (e) {} online.active = false; online.peer = null; online.conn = null; }
 function backToStart() { $('online-wait').classList.remove('show'); $('online-start').classList.remove('hidden'); }
@@ -360,7 +368,7 @@ function createRoom() {
   onlineReset(); const code = genCode();
   $('online-error').textContent = ''; $('online-start').classList.add('hidden'); $('online-wait').classList.add('show');
   $('room-code').textContent = code; $('online-status').textContent = "⏳ En attente d'un adversaire…";
-  const peer = new Peer('echq-' + code, { debug: 0 }); online.peer = peer; online.myColor = 'w';
+  const peer = new Peer('echq-' + code, { debug: 0, config: ICE }); online.peer = peer; online.myColor = 'w';
   peer.on('connection', (conn) => { conn.on('open', () => setupConn(conn)); });
   peer.on('error', (e) => { $('online-error').textContent = e.type === 'unavailable-id' ? 'Code déjà pris, réessaie.' : 'Erreur réseau : ' + e.type; backToStart(); });
 }
@@ -369,7 +377,7 @@ function joinRoom() {
   const code = ($('join-code').value || '').trim().toUpperCase(); if (code.length < 4) { $('online-error').textContent = 'Entre le code reçu.'; return; }
   onlineReset(); $('online-error').textContent = ''; $('online-start').classList.add('hidden'); $('online-wait').classList.add('show');
   $('room-code').textContent = code; $('online-status').textContent = '🔌 Connexion…';
-  const peer = new Peer({ debug: 0 }); online.peer = peer; online.myColor = 'b';
+  const peer = new Peer({ debug: 0, config: ICE }); online.peer = peer; online.myColor = 'b';
   peer.on('open', () => { const conn = peer.connect('echq-' + code, { reliable: true }); conn.on('open', () => setupConn(conn)); setTimeout(() => { if (!online.active) { $('online-error').textContent = 'Salle introuvable, vérifie le code.'; backToStart(); } }, 9000); });
   peer.on('error', (e) => { $('online-error').textContent = e.type === 'peer-unavailable' ? 'Salle introuvable, vérifie le code.' : 'Erreur réseau : ' + e.type; backToStart(); });
 }

@@ -50,9 +50,12 @@ body {
 .menu-quick { margin-top: 1.6rem; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem; }
 .menu-foot { margin-top: 1.6rem; color: var(--muted); font-size: 0.8rem; }
 
-button { font-family: inherit; cursor: pointer; border: none; transition: transform .1s, filter .15s, background .15s; }
+button { font-family: inherit; cursor: pointer; border: none; transition: transform .12s ease, filter .15s, background .15s, box-shadow .15s, border-color .15s, color .15s; }
 button:hover { transform: translateY(-1px); }
-.big { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #0b0b16; font-weight: 800; font-size: 1.2rem; padding: 1rem; border-radius: 14px; }
+button:active { transform: translateY(0) scale(.97); }
+button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+.big { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #0b0b16; font-weight: 800; font-size: 1.2rem; padding: 1rem; border-radius: 14px; box-shadow: 0 8px 24px rgba(124,92,255,.35); }
+.big:hover { box-shadow: 0 12px 32px rgba(124,92,255,.5); }
 .ghost { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 0.7rem; border-radius: 12px; font-weight: 600; }
 .ghost:hover { background: var(--card); }
 .chip { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.8rem; border-radius: 999px; font-size: 0.9rem; }
@@ -116,11 +119,14 @@ body[data-pieces="gold"] .piece.b { color: #c0c4cc; text-shadow: 0 1px 2px #2a2a
 @keyframes pop { from { transform: scale(.55); } to { transform: scale(1); } }
 
 /* ===== Contrôles ===== */
-.controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.4rem; }
-.ctrl { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 0.85rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; }
-.ctrl:hover { background: rgba(255,255,255,.1); }
-.ctrl.primary { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #0b0b16; border: none; }
-.ctrl:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.controls { display: flex; gap: 0.55rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
+.ctrl { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 1rem; border-radius: 12px; font-weight: 600; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 0.35rem; }
+.ctrl:hover { background: rgba(255,255,255,.08); border-color: var(--accent); color: #fff; }
+.ctrl.primary { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #0b0b16; border: none; box-shadow: 0 6px 18px rgba(124,92,255,.3); }
+.ctrl.primary:hover { filter: brightness(1.08); color: #0b0b16; }
+.ctrl:disabled { opacity: .35; cursor: not-allowed; transform: none; border-color: var(--border); }
+.ctrl:disabled:hover { background: var(--card); color: var(--text); }
+.icon-btn:hover { border-color: var(--accent); }
 .status { min-height: 1.4rem; color: var(--sel); font-weight: 700; text-align: center; }
 
 /* ===== Panneau ===== */
