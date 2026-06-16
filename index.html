@@ -45,7 +45,7 @@
         <label class="toggle"><input type="checkbox" autocomplete="off" id="chess960" /> <span>🎲 Chess960 (départ aléatoire)</span></label>
         <label class="toggle"><input type="checkbox" autocomplete="off" id="powerups" /> <span>🎁 Power-ups (cases « rejouer »)</span></label>
         <label class="toggle"><input type="checkbox" autocomplete="off" id="ai" /> <span>🤖 Jouer contre l'IA (Noirs)</span></label>
-        <label class="toggle"><input type="checkbox" autocomplete="off" id="clock-on" /> <span>⏱️ Horloge (5 min/joueur)</span></label>
+        <label class="toggle"><input type="checkbox" autocomplete="off" id="clock-on" checked /> <span>⏱️ Horloge (5 min/joueur)</span></label>
         <label class="toggle"><input type="checkbox" autocomplete="off" id="sound" checked /> <span>🔊 Sons</span></label>
       </div>
       <p class="hint">Changer un mode (sauf 👑/⏱️/🔊) relance une partie.</p>
@@ -59,7 +59,16 @@
         <li>Règles complètes : <strong>échec et mat</strong>, <strong>roque</strong>, <strong>prise en passant</strong>, promotion au choix.</li>
         <li><strong>👑 King of the Hill</strong> : amène ton roi au centre pour gagner.</li>
         <li><strong>💥 Atomic</strong> : chaque capture détruit les pièces autour.</li>
-        <li><strong>🎁 Power-up</strong> : t'arrêter sur une case ★ te fait <em>rejouer</em>.</li>
+      </ul>
+
+      <h2>🎁 Power-ups (façon Mario Kart)</h2>
+      <p class="hint">Active le mode 🎁 : des cases bonus apparaissent au fil de la partie. Arrête une pièce dessus pour déclencher l'effet.</p>
+      <ul class="help">
+        <li>🍄 <strong>Champignon</strong> : tu rejoues un coup</li>
+        <li>⚡ <strong>Éclair</strong> : foudroie une pièce ennemie au hasard</li>
+        <li>🐢 <strong>Carapace</strong> : élimine la pièce ennemie la plus proche</li>
+        <li>💣 <strong>Bob-omb</strong> : explosion, détruit tout autour</li>
+        <li>🌟 <strong>Étoile</strong> : tu rejoues <em>et</em> tu foudroies une pièce</li>
       </ul>
     </aside>
   </main>

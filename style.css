@@ -45,7 +45,8 @@ main { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; align
 .cell.last { box-shadow: inset 0 0 0 100px var(--last); }
 .cell.selected { background: var(--sel) !important; }
 .cell.hill::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 3px rgba(124,92,255,.8); }
-.cell.power::after { content: "★"; position: absolute; top: 1px; right: 3px; font-size: 14px; color: #ffcf3a; text-shadow: 0 0 4px #000; }
+.cell.power { box-shadow: inset 0 0 0 3px rgba(255, 207, 58, .75); }
+.power-icon { font-size: min(7vw, 34px); filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); animation: pop .3s ease; }
 .cell.move::before { content: ""; width: 28%; height: 28%; border-radius: 50%; background: var(--move); }
 .cell.capture::before { content: ""; position: absolute; inset: 8%; border-radius: 50%; border: 4px solid var(--move); }
 .piece { pointer-events: none; }
